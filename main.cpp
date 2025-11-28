@@ -4,7 +4,7 @@
 
 using namespace std;
 
-//We have to write our own string-to-int, since atoi is banned.
+//My own string to int (stoi)
 
 int stringToInt(string str, bool& outError) {
     int sonuc = 0;
@@ -18,7 +18,7 @@ int stringToInt(string str, bool& outError) {
         return 0;
     }
 
-    // Check for negative numbers
+    // Negative number check
     if (str[0] == '-') {
         negatif = true;
         baslangic = 1;
@@ -61,7 +61,6 @@ string stringToUpper(string str) {
     return result;
 }
 
- //We also need a custom line splitter, since strtok is banned.
 void splitLine(string line, string parts[], int& partCount) {
     partCount = 0;
     string temp = "";
@@ -167,7 +166,7 @@ public:
         return PC;
     }
     
-     // Line numbers are 1-based, so we adjust for our 0-based PC.
+     // Line numbers are 1-based, adjust for our 0-based PC.
     void setPC(int newLine) {
         PC = newLine - 1; 
     }
@@ -218,7 +217,6 @@ public:
             hata = executeJMP(parts, partCount);
         }
         else if (command == "JPN") {
-            // *** DEĞİŞİKLİK 1: JPN çağırma şekli 'memory' içerecek şekilde güncellendi ***
             hata = executeJPN(parts, partCount, memory); 
         }
         else if (command == "HLT") {
@@ -232,7 +230,7 @@ public:
             hata = true;
         }
 
-        // If we didn't just jump, and we're not halted, move to the next line.
+        // If not jump or halt, next line
         if (command != "JMP" && !didJump && command != "HLT") {
             PC++; 
         }
@@ -248,7 +246,6 @@ public:
     }
 
 private:
-    // *** DEĞİŞİKLİK 2: Register sayısı 6 yapıldı (HW1 uyumu) ***
     static const int REGISTER_COUNT = 6; // R1-R6
     unsigned char registers[REGISTER_COUNT];
     int PC; // Program Counter (0-based index)
@@ -258,7 +255,6 @@ private:
     bool isRegister(string op) {
         if (op.length() != 2) return false;
         if (op[0] != 'R' && op[0] != 'r') return false;
-        // *** DEĞİŞİKLİK 3: Register kontrolü 6'ya çıkarıldı ***
         if (op[1] >= '1' && op[1] <= '6') return true; // R1-R6
         return false;
     }
@@ -267,7 +263,7 @@ private:
         if (op.length() < 2) return false;
         if (op[0] != '#') return false;
         bool error;
-        stringToInt(op.substr(1), error); // Get the part *after* the '#' symbol.
+        stringToInt(op.substr(1), error);
         return !error;
     }
 
@@ -309,12 +305,12 @@ private:
             if (isRegister(op2)) { // MOV R1, R2
                 registers[regIndex] = registers[parseRegister(op2)];
             } 
-            else if (isAddress(op2)) { // MOV R1, #ADRES
+            else if (isAddress(op2)) { // MOV R1, #ADRESS
                 int addr = parseAddress(op2, error);
                 if (error) return true;
                 registers[regIndex] = memory.get(addr);
             } 
-            else if (isConstant(op2)) { // MOV R1, SABİT
+            else if (isConstant(op2)) { // MOV R1, CONSTANT
                 int val = parseConstant(op2, error);
                 if (error) return true;
                 registers[regIndex] = (unsigned char)val;
@@ -347,7 +343,7 @@ private:
         string op2 = stringToUpper(parts[2]);
         bool error = false;
 
-        if (!isRegister(op1)) return true; // First param must be a register
+        if (!isRegister(op1)) return true; 
 
         int regIndex = parseRegister(op1);
 
@@ -376,7 +372,7 @@ private:
         string op2 = stringToUpper(parts[2]);
         bool error = false;
 
-        if (!isRegister(op1)) return true; // First param must be a register
+        if (!isRegister(op1)) return true; 
 
         int regIndex = parseRegister(op1);
 
@@ -406,9 +402,9 @@ private:
             if (error || lineNum <= 0) return true; 
             
             setPC(lineNum);
-            didJump = true; // no need to increment PC
+            didJump = true; 
         }
-        else if (partCount == 3) { // JMP R1, line
+        else if (partCount == 3) { 
             if (!isRegister(stringToUpper(parts[1]))) return true; 
             
             int regIndex = parseRegister(stringToUpper(parts[1]));
@@ -426,51 +422,48 @@ private:
         return false; 
     }
 
-    // *** DEĞİŞİKLİK 4: executeJPN fonksiyonu istediğiniz mantığa göre (sabit OLMALI veya adres OLMALI) tamamen güncellendi ***
     bool executeJPN(string parts[], int partCount, Memory& memory) {
         if (partCount != 3) return true; 
         
         string op1 = stringToUpper(parts[1]);
-        string op2 = stringToUpper(parts[2]); // İkinci parametre (adres VEYA sabit)
+        string op2 = stringToUpper(parts[2]); 
         bool error = false;
 
-        if (!isRegister(op1)) return true; // İlk parametre register olmalı
+        if (!isRegister(op1)) return true; 
         
         int regIndex = parseRegister(op1);
-        int lineNum = 0; // Hedef satır numarası
+        int lineNum = 0; 
 
         if (isConstant(op2)) { 
-            // DURUM 1: JPN R1, 16 (Sabit)
+            
             lineNum = parseConstant(op2, error);
             if (error) return true;
         }
         else if (isAddress(op2)) { 
-            // DURUM 2: JPN R1, #16 (Adres)
+            
             int addr = parseAddress(op2, error);
             if (error) return true;
             
-            // İsteğiniz: Bellekten adresi oku, o adresteki DEĞERİ satır numarası yap
+            
             lineNum = (int)memory.get(addr);
         }
         else {
-            return true; // Hatalı ikinci parametre (ne sabit ne de adres)
+            return true; 
         }
 
-        // Satır numarasının geçerli olup olmadığını kontrol et
         if (lineNum <= 0) {
             cout << "ERROR: Invalid JPN line target (must be > 0): " << lineNum << endl;
             return true; 
         }
 
-        // JPN koşulunu kontrol et
         signed char regValue = (signed char)registers[regIndex];
 
         if (regValue <= 0) {
             setPC(lineNum);
-            didJump = true; // PC'nin otomatik artmasını engelle
+            didJump = true; 
         }
         
-        return false; // Hata yok
+        return false; 
     }
 
     bool executePRN(string parts[], int partCount, Memory& memory) {
@@ -501,7 +494,7 @@ private:
 
 int main(int argc, char* argv[]) {
     
-    // 1. Checking to see if we have enough parameters
+    // Check the number of arguments.
     if (argc != 3) {
         cout << "ERROR: Invalid usage." << endl;
         cout << "Usage: " << argv[0] << " <filename.txt> <option>" << endl;
@@ -518,7 +511,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // 2. Read ProgramFile
+    // Read ProgramFile
     ifstream inputFile(filename.c_str());
     if (!inputFile) {
         cout << "ERROR: Could not open file: " << filename << endl;
